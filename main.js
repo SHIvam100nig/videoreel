@@ -109,6 +109,15 @@ async function startProcessing() {
     progressFill.style.width = '10%';
 
     try {
+        if (!window.crossOriginIsolated) {
+            statusText.textContent = 'Security headers missing. Reloading...';
+            // Simple hack for GitHub Pages: if we are not isolated, reload once more to let SW take over.
+            // But to avoid infinite loops, we should warn user or try a soft reload strategy if needed.
+            // For now, let's just Alert the user because infinite reload loops are bad.
+            alert("SharedArrayBuffer support is missing. \n\nIf you are on GitHub Pages:\n1. Please Refresh the page manually once or twice.\n2. Ensure 'coi-serviceworker.js' is in the folder.\n\nThe app needs to reload to enable high-performance mode.");
+            throw new Error("SharedArrayBuffer is not defined (Cross-Origin Isolated: false). Please reload.");
+        }
+
         if (generateCaptions) {
             await initTranscriber();
         }
