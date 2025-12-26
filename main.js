@@ -110,13 +110,24 @@ async function startProcessing() {
 
     try {
         if (!window.crossOriginIsolated) {
-            statusText.textContent = 'Security headers missing. Reloading...';
-            // Simple hack for GitHub Pages: if we are not isolated, reload once more to let SW take over.
-            // But to avoid infinite loops, we should warn user or try a soft reload strategy if needed.
-            // For now, let's just Alert the user because infinite reload loops are bad.
-            alert("SharedArrayBuffer support is missing. \n\nIf you are on GitHub Pages:\n1. Please Refresh the page manually once or twice.\n2. Ensure 'coi-serviceworker.js' is in the folder.\n\nThe app needs to reload to enable high-performance mode.");
-            throw new Error("SharedArrayBuffer is not defined (Cross-Origin Isolated: false). Please reload.");
+            const hasReloaded = sessionStorage.getItem('retry_reload');
+
+            if (!hasReloaded) {
+                statusText.textContent = 'Enabling High-Performance Mode (Reloading)...';
+                sessionStorage.setItem('retry_reload', 'true');
+                window.location.reload();
+                return; // Stop execution
+            } else {
+                // Already reloaded once, so it's a persistent issue or user blocked it
+                statusText.textContent = 'Performance Mode Failed.';
+                alert("Critical Error: Your browser is blocking the high-performance features (SharedArrayBuffer) needed for this AI tool.\n\nSolutions:\n1. Open this in Chrome or Edge Desktop.\n2. If on GitHub Pages, try waiting 1 minute and Hard Refresh (Ctrl+F5).");
+                sessionStorage.removeItem('retry_reload'); // Reset for next time
+                throw new Error("Security Headers Missing - Application cannot run.");
+            }
         }
+
+        // Clear flag if we are successful
+        sessionStorage.removeItem('retry_reload');
 
         if (generateCaptions) {
             await initTranscriber();
